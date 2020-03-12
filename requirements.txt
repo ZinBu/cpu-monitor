@@ -1,4 +1,4 @@
-psutil==5.6.1
+psutil==5.6.6
 PyQt5==5.12.1
 PyQt5-sip==4.19.15
 PyQt5-stubs==5.12.1.0
