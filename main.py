@@ -1,71 +1,36 @@
 import os
 import shelve
 import sys
-import threading
+import typing
 from time import sleep
 
 import psutil
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QPointF
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, \
-    QMenu, QAction, qApp, QStyle
+from PyQt5.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QMenu, QAction, qApp, QStyle
 
-
-def thread(func):
-    """ Декоратор для запуска функций в потоке без контроля исполнения """
-
-    def run(*args, **kwargs):
-        target = threading.Thread(target=func, args=args, kwargs=kwargs)
-        # если False, то работает после завершения главного процесса
-        target.setDaemon(True)
-        target.start()
-        return target
-
-    return run
-
-
-def executable_file_path(file_path: str):
-    """
-    Определение пути файла в зависимости от того как исполняется приложение
-    :return: str
-    """
-    if getattr(sys, 'frozen', False):
-        exec_path = sys._MEIPASS
-        file_path = os.path.join(exec_path, file_path)
-    else:
-        file_path = file_path
-    return file_path
+import config
+import tools
 
 
 class MainWindow(QMainWindow):
     TRAY_ICON_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
     TRAY_ICON_COLOR_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
-    TIMEOUT = 1.5  # Период обновления виджета
-    DEFAULT_COLOR = 'SteelBlue'
+    TIMEOUT = 2  # Период обновления виджета
+    DEFAULT_COLOR = 'Auto'
     DB_DIR = 'db'
     DB_NAME = os.path.join(DB_DIR, 'config')
 
     # Настройки значка
     MAP_SIZE = 64, 64
     DIGIT_SIZE = 45
-    COLORS = dict(
-        Red=(255, 0, 0),
-        MediumVioletRed=(199, 21, 133),
-        DeepPink=(255, 20, 147),
-        OrangeRed=(255, 69, 0),
-        DarkOrange=(255, 140, 0),
-        PapayaWhip=(255, 239, 213),
-        MediumOrchid=(186, 85, 211),
-        PaleGreen=(152, 251, 152),
-        Lime=(0, 255, 0),
-        MediumSlateBlue=(123, 104, 238),
-        DeepSkyBlue=(0, 191, 255),
-        SteelBlue=(30, 144, 255)
-    )
+    COLORS = config.COLORS
 
     def __init__(self):
         # Переопределяем конструктор класса
         # Обязательно нужно вызвать метод супер класса
+        self._linux = sys.platform == 'linux'
         QMainWindow.__init__(self)
         self.setWindowTitle('CPU Monitor')
         # Связываем слоты с сигналами
@@ -87,17 +52,15 @@ class MainWindow(QMainWindow):
         # Запускаем мониторинг
         self.run_monitoring()
 
-    @thread
-    def run_monitoring(self):
+    @tools.thread
+    def run_monitoring(self) -> None:
         """ Стар беспрерывного мониторинга """
+        metric_getter = self._choose_metric_getter()
         while True:
-            # Онли линукс
-            # print(psutil.sensors_temperatures())
-            cpu_percent = str(psutil.cpu_percent()).split('.')[0]
-            self.TRAY_ICON_SLOT.emit(cpu_percent)
+            self.TRAY_ICON_SLOT.emit(metric_getter())
             sleep(self.TIMEOUT)
 
-    def set_icon(self, digit=None):
+    def set_icon(self, digit: typing.Optional[str] = None) -> None:
         """Установка иконки в трей"""
         if not digit:
             self.tray_icon.setIcon(self.default_icon)
@@ -105,11 +68,8 @@ class MainWindow(QMainWindow):
             icon = self.draw_digit(digit)
             self.tray_icon.setIcon(QIcon(icon))
 
-    def set_color(self, color_name):
-        """
-        Установка цвета, дизейблинг пункта меню
-        и раздизейблинг пункта предыдущего выбора.
-        """
+    def set_color(self, color_name: str) -> None:
+        """Установка цвета, дизейблинг пункта меню и раздизейблинг пункта предыдущего выбора."""
         self.selected_color = self.COLORS[color_name]
         # Дизейблим выбранный цвет
         getattr(self, color_name).setDisabled(True)
@@ -119,25 +79,36 @@ class MainWindow(QMainWindow):
         self._show_message(f'Установлен цвет: {color_name}', 100)
         self._save_config(color_name)
 
-    def draw_digit(self, digit):
-        """ Создание иконки и рисование цифры на ней """
-
+    def draw_digit(self, digit: str) -> QtGui.QPixmap:
+        """Создание иконки и рисование цифры на ней"""
         # Позиционируем цифру на виджете
-        digit_place = 0 if len(digit) > 1 else 20, 50
-
+        digit_place: tuple = 0 if len(digit) > 1 else 20, 50
         # Создаем холстик для рисования цифры иконку
         icon = QtGui.QPixmap(*self.MAP_SIZE)
         icon.fill(QtGui.QColor("transparent"))
         # Рисуем на холстике текст
         self.painter.begin(icon)
         self.painter.setRenderHint(QtGui.QPainter.HighQualityAntialiasing)
-        self.painter.setPen(QtGui.QColor(*self.selected_color))
+        self.painter.setPen(QtGui.QColor(*self.get_digits_color(digit)))
         self.painter.setFont(QtGui.QFont('Arial', self.DIGIT_SIZE))
-        self.painter.drawText(*digit_place, digit)
+        self.painter.drawText(QPointF(*digit_place), digit)
         self.painter.end()
         return icon
 
-    def set_up(self):
+    def get_digits_color(self, digit: str) -> tuple[int, int, int]:
+        if not self.selected_color:
+            digit = int(digit)
+            if digit < 40:
+                return self.COLORS['PaleGreen']
+            elif digit < 55:
+                return self.COLORS['SteelBlue']
+            elif digit < 75:
+                return self.COLORS['DarkOrange']
+            else:
+                return self.COLORS['Red']
+        return self.selected_color
+
+    def set_up(self) -> None:
         """Вывод информационного окна"""
         # Объявим и добавим действия для работы с иконкой системного трея
         self._load_config()
@@ -151,14 +122,21 @@ class MainWindow(QMainWindow):
         tray_menu.addAction(quit_action)
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
-        self._show_message("Отслеживаем нагрузку")
+        self._show_message(f"Отслеживаем {'температуру' if self._linux else 'нагрузку'}")
 
-    def _show_message(self, msg, time=2000):
+    def _choose_metric_getter(self) -> typing.Callable:
+        return (
+            lambda: str(int(psutil.sensors_temperatures()['coretemp'][0].current))
+            if self._linux
+            else lambda: str(int(psutil.cpu_percent()))
+        )
+
+    def _show_message(self, msg: str, time: int = 2000) -> None:
         """Вывод сообщения в трее"""
         msg_type = QSystemTrayIcon.Information
         self.tray_icon.showMessage("CPU Monitor",  msg, msg_type, time)
 
-    def _set_context_color(self, tray_menu, name):
+    def _set_context_color(self, tray_menu: QMenu, name: str) -> None:
         """
         Установка цвета в контекстное меню трея
         и создание атрибута для дисейбла.
@@ -167,18 +145,16 @@ class MainWindow(QMainWindow):
         if self.COLORS[name] == self.selected_color:
             color_action.setDisabled(True)
         setattr(self, name, color_action)
-        color_action.triggered.connect(
-            lambda: self.TRAY_ICON_COLOR_SLOT.emit(name)
-        )
+        color_action.triggered.connect(lambda: self.TRAY_ICON_COLOR_SLOT.emit(name))
         tray_menu.addAction(color_action)
 
-    def _save_config(self, color):
-        db_path = executable_file_path(self.DB_NAME)
+    def _save_config(self, color: str) -> None:
+        db_path = tools.executable_file_path(self.DB_NAME)
         with shelve.open(db_path) as db:
             db['color'] = color
 
-    def _load_config(self):
-        db_path = executable_file_path(self.DB_NAME)
+    def _load_config(self) -> None:
+        db_path = tools.executable_file_path(self.DB_NAME)
         # Создадим папку, если ее нет
         if not os.path.exists(db_path + '.dat'):
             os.mkdir(os.path.join(os.getcwd(), self.DB_DIR))
@@ -186,8 +162,9 @@ class MainWindow(QMainWindow):
             color = db.get('color')
             if color:
                 self.selected_color = self.COLORS[color]
+                self.last_color = color
 
-    def _close(self):
+    def _close(self) -> None:
         self.tray_icon.hide()
         qApp.quit()
 
@@ -197,4 +174,3 @@ if __name__ == "__main__":
     mw = MainWindow()
     mw.hide()
     sys.exit(app.exec())
-
