@@ -6,6 +6,7 @@ from time import sleep
 
 import psutil
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QPointF
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QMenu, QAction, qApp, QStyle
 
@@ -59,7 +60,7 @@ class MainWindow(QMainWindow):
             self.TRAY_ICON_SLOT.emit(metric_getter())
             sleep(self.TIMEOUT)
 
-    def set_icon(self, digit=None) -> None:
+    def set_icon(self, digit: typing.Optional[str] = None) -> None:
         """Установка иконки в трей"""
         if not digit:
             self.tray_icon.setIcon(self.default_icon)
@@ -67,7 +68,7 @@ class MainWindow(QMainWindow):
             icon = self.draw_digit(digit)
             self.tray_icon.setIcon(QIcon(icon))
 
-    def set_color(self, color_name):
+    def set_color(self, color_name: str) -> None:
         """Установка цвета, дизейблинг пункта меню и раздизейблинг пункта предыдущего выбора."""
         self.selected_color = self.COLORS[color_name]
         # Дизейблим выбранный цвет
@@ -78,10 +79,10 @@ class MainWindow(QMainWindow):
         self._show_message(f'Установлен цвет: {color_name}', 100)
         self._save_config(color_name)
 
-    def draw_digit(self, digit):
+    def draw_digit(self, digit: str) -> QtGui.QPixmap:
         """Создание иконки и рисование цифры на ней"""
         # Позиционируем цифру на виджете
-        digit_place = 0 if len(digit) > 1 else 20, 50
+        digit_place: tuple = 0 if len(digit) > 1 else 20, 50
         # Создаем холстик для рисования цифры иконку
         icon = QtGui.QPixmap(*self.MAP_SIZE)
         icon.fill(QtGui.QColor("transparent"))
@@ -90,11 +91,11 @@ class MainWindow(QMainWindow):
         self.painter.setRenderHint(QtGui.QPainter.HighQualityAntialiasing)
         self.painter.setPen(QtGui.QColor(*self.selected_color))
         self.painter.setFont(QtGui.QFont('Arial', self.DIGIT_SIZE))
-        self.painter.drawText(*digit_place, digit)
+        self.painter.drawText(QPointF(*digit_place), digit)
         self.painter.end()
         return icon
 
-    def set_up(self):
+    def set_up(self) -> None:
         """Вывод информационного окна"""
         # Объявим и добавим действия для работы с иконкой системного трея
         self._load_config()
@@ -117,12 +118,12 @@ class MainWindow(QMainWindow):
             else lambda: str(int(psutil.cpu_percent()))
         )
 
-    def _show_message(self, msg, time=2000):
+    def _show_message(self, msg: str, time: int = 2000) -> None:
         """Вывод сообщения в трее"""
         msg_type = QSystemTrayIcon.Information
         self.tray_icon.showMessage("CPU Monitor",  msg, msg_type, time)
 
-    def _set_context_color(self, tray_menu, name):
+    def _set_context_color(self, tray_menu: QMenu, name: str) -> None:
         """
         Установка цвета в контекстное меню трея
         и создание атрибута для дисейбла.
@@ -136,12 +137,12 @@ class MainWindow(QMainWindow):
         )
         tray_menu.addAction(color_action)
 
-    def _save_config(self, color):
+    def _save_config(self, color: str) -> None:
         db_path = tools.executable_file_path(self.DB_NAME)
         with shelve.open(db_path) as db:
             db['color'] = color
 
-    def _load_config(self):
+    def _load_config(self) -> None:
         db_path = tools.executable_file_path(self.DB_NAME)
         # Создадим папку, если ее нет
         if not os.path.exists(db_path + '.dat'):
@@ -151,7 +152,7 @@ class MainWindow(QMainWindow):
             if color:
                 self.selected_color = self.COLORS[color]
 
-    def _close(self):
+    def _close(self) -> None:
         self.tray_icon.hide()
         qApp.quit()
 
