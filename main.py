@@ -162,6 +162,7 @@ class MainWindow(QMainWindow):
             color = db.get('color')
             if color:
                 self.selected_color = self.COLORS[color]
+                self.last_color = color
 
     def _close(self) -> None:
         self.tray_icon.hide()
