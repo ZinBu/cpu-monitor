@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
     TRAY_ICON_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
     TRAY_ICON_COLOR_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
     TIMEOUT = 2  # Период обновления виджета
-    DEFAULT_COLOR = 'SteelBlue'
+    DEFAULT_COLOR = 'Auto'
     DB_DIR = 'db'
     DB_NAME = os.path.join(DB_DIR, 'config')
 
