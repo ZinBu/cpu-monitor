@@ -89,11 +89,24 @@ class MainWindow(QMainWindow):
         # Рисуем на холстике текст
         self.painter.begin(icon)
         self.painter.setRenderHint(QtGui.QPainter.HighQualityAntialiasing)
-        self.painter.setPen(QtGui.QColor(*self.selected_color))
+        self.painter.setPen(QtGui.QColor(*self.get_digits_color(digit)))
         self.painter.setFont(QtGui.QFont('Arial', self.DIGIT_SIZE))
         self.painter.drawText(QPointF(*digit_place), digit)
         self.painter.end()
         return icon
+
+    def get_digits_color(self, digit: str) -> tuple[int, int, int]:
+        if not self.selected_color:
+            digit = int(digit)
+            if digit < 40:
+                return self.COLORS['PaleGreen']
+            elif digit < 55:
+                return self.COLORS['SteelBlue']
+            elif digit < 75:
+                return self.COLORS['DarkOrange']
+            else:
+                return self.COLORS['Red']
+        return self.selected_color
 
     def set_up(self) -> None:
         """Вывод информационного окна"""
@@ -132,9 +145,7 @@ class MainWindow(QMainWindow):
         if self.COLORS[name] == self.selected_color:
             color_action.setDisabled(True)
         setattr(self, name, color_action)
-        color_action.triggered.connect(
-            lambda: self.TRAY_ICON_COLOR_SLOT.emit(name)
-        )
+        color_action.triggered.connect(lambda: self.TRAY_ICON_COLOR_SLOT.emit(name))
         tray_menu.addAction(color_action)
 
     def _save_config(self, color: str) -> None:

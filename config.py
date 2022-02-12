@@ -1,5 +1,6 @@
 
 COLORS = dict(
+    Auto=None,
     Red=(255, 0, 0),
     MediumVioletRed=(199, 21, 133),
     DeepPink=(255, 20, 147),
