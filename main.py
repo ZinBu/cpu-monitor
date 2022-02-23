@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
 
     @tools.thread
     def run_monitoring(self) -> None:
-        """ Стар беспрерывного мониторинга """
+        """ Старт беспрерывного мониторинга """
         metric_getter = self._choose_metric_getter()
         while True:
             self.TRAY_ICON_SLOT.emit(metric_getter())
