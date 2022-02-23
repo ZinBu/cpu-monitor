@@ -13,6 +13,15 @@
 
 ### Запуск через `poetry`
 
-    poetry shell
+    poetry shell  # (optional)
     poetry install
     poetry run python main.py
+
+
+### Создания скрипта для запуска
+
+    make runner
+
+Запуск скрипта (можно добавить в автозагрузку):
+    
+    sh cpu_monitor.sh
