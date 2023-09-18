@@ -4,9 +4,9 @@
 Есть возможность менять цвета =)
 
 
-### Python 3.9
+### Python 3.11
 
-### Запуск через `pip`
+### Запуск через `pip` (unstable)
 
     pip install -r requirements.txt
     python main.py

@@ -1,1 +1,6 @@
 db
+venv
+*pycache*
+logs
+dist
+build
