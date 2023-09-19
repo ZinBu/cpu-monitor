@@ -14,7 +14,7 @@ import config
 import tools
 
 
-class MainWindow(QMainWindow):
+class TrayCounter(QMainWindow):
     TRAY_ICON_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
     TRAY_ICON_COLOR_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
     TIMEOUT = 2  # Период обновления виджета
@@ -39,9 +39,9 @@ class MainWindow(QMainWindow):
 
         self.tray_icon = QSystemTrayIcon(self)
         self.painter = QtGui.QPainter()
-        self.last_color = self.DEFAULT_COLOR
+        self._last_color_name = self.DEFAULT_COLOR
         # Задаем дефолтный цвет
-        self.selected_color = self.COLORS[self.DEFAULT_COLOR]
+        self._selected_color_value = self.COLORS[self.DEFAULT_COLOR]
         # Задаем дефолтную иконку, если что пойдет не так
         self.default_icon = self.style().standardIcon(QStyle.SP_DesktopIcon)
         # Ставим первоначальную иконку
@@ -70,12 +70,12 @@ class MainWindow(QMainWindow):
 
     def set_color(self, color_name: str) -> None:
         """Установка цвета, дизейблинг пункта меню и раздизейблинг пункта предыдущего выбора."""
-        self.selected_color = self.COLORS[color_name]
+        self._selected_color_value = self.COLORS[color_name]
         # Дизейблим выбранный цвет
         getattr(self, color_name).setDisabled(True)
         # И раздизейблим предыдущий
-        getattr(self, self.last_color).setDisabled(False)
-        self.last_color = color_name
+        getattr(self, self._last_color_name).setDisabled(False)
+        self._last_color_name = color_name
         self._show_message(f'Установлен цвет: {color_name}', 100)
         self._save_config(color_name)
 
@@ -96,7 +96,7 @@ class MainWindow(QMainWindow):
         return icon
 
     def get_digits_color(self, digit: str) -> tuple[int, int, int]:
-        if not self.selected_color:
+        if not self._selected_color_value:
             digit = int(digit)
             if digit < 40:
                 return self.COLORS['PaleGreen']
@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
                 return self.COLORS['DarkOrange']
             else:
                 return self.COLORS['Red']
-        return self.selected_color
+        return self._selected_color_value
 
     def set_up(self) -> None:
         """Вывод информационного окна"""
@@ -142,7 +142,7 @@ class MainWindow(QMainWindow):
         и создание атрибута для дисейбла.
         """
         color_action = QAction(name, self)
-        if self.COLORS[name] == self.selected_color:
+        if self.COLORS[name] == self._selected_color_value:
             color_action.setDisabled(True)
         setattr(self, name, color_action)
         color_action.triggered.connect(lambda: self.TRAY_ICON_COLOR_SLOT.emit(name))
@@ -161,8 +161,8 @@ class MainWindow(QMainWindow):
         with shelve.open(db_path) as db:
             color = db.get('color')
             if color:
-                self.selected_color = self.COLORS[color]
-                self.last_color = color
+                self._selected_color_value = self.COLORS[color]
+                self._last_color_name = color
 
     def _close(self) -> None:
         self.tray_icon.hide()
@@ -171,6 +171,6 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    mw = MainWindow()
+    mw = TrayCounter()
     mw.hide()
     sys.exit(app.exec())
