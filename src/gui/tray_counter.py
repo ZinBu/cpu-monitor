@@ -13,34 +13,35 @@ from src.protocols import Metric, Database, DBConfigData
 
 # TODO Translate !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 class TrayCounter(QMainWindow):
-    TRAY_ICON_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
-    TRAY_ICON_COLOR_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
-    TIMEOUT = 2  # Период обновления виджета
-    DEFAULT_COLOR = 'Auto'
+    # Widget's slots
+    TRAY_ICON_SLOT = QtCore.pyqtSignal(str)
+    TRAY_ICON_COLOR_SLOT = QtCore.pyqtSignal(str)
 
-    # Настройки значка
+    DEFAULT_COLOR_NAME = 'Auto'
+
     COLORS = config.COLORS
 
     def __init__(self, metric: type[Metric], db: Database):
-        # Переопределяем конструктор класса
-        # Обязательно нужно вызвать метод супер класса
+        # It's necessary
+        QMainWindow.__init__(self)
+
         self.db = db
         self.metric = metric()
-        QMainWindow.__init__(self)
+
         self.setWindowTitle(self.metric.get_name())
-        # Связываем слоты с сигналами
-        self.TRAY_ICON_SLOT.connect(self.set_icon)
-        self.TRAY_ICON_COLOR_SLOT.connect(self.set_color)
+
+        self._couple_slots_and_signals()
 
         self.tray_icon = QSystemTrayIcon(self)
         self.painter = QtGui.QPainter()
-        self._last_color_name = self.DEFAULT_COLOR
+
+        self._last_color_name = self.DEFAULT_COLOR_NAME
         # Задаем дефолтный цвет
-        self._selected_color_value = self.COLORS[self.DEFAULT_COLOR]
+        self._selected_color_value = self.COLORS[self.DEFAULT_COLOR_NAME]
         # Задаем дефолтную иконку, если что пойдет не так
         self.default_icon = self.style().standardIcon(QStyle.SP_DesktopIcon)  # type: ignore
         # Ставим первоначальную иконку
-        self.set_icon()
+        self.set_icon_in_tray()
         # Выводим информационное сообщение, задаем цвет
         # и производим прочие настройки
         self.set_up()
@@ -49,14 +50,16 @@ class TrayCounter(QMainWindow):
 
     @tools.thread
     def run_monitoring(self) -> None:
-        """ Старт беспрерывного мониторинга """
         value_getter = self.metric.value_getter()
         while True:
             self.TRAY_ICON_SLOT.emit(value_getter())
             sleep(config.REFRESH_TIMEOUT_SEC)
 
-    def set_icon(self, digit: typing.Optional[str] = None) -> None:
-        """Установка иконки в трей"""
+    def _couple_slots_and_signals(self) -> None:
+        self.TRAY_ICON_SLOT.connect(self.set_icon_in_tray)
+        self.TRAY_ICON_COLOR_SLOT.connect(self.set_color)
+
+    def set_icon_in_tray(self, digit: typing.Optional[str] = None) -> None:
         if not digit:
             self.tray_icon.setIcon(self.default_icon)
         else:
@@ -64,11 +67,10 @@ class TrayCounter(QMainWindow):
             self.tray_icon.setIcon(QIcon(icon))
 
     def set_color(self, color_name: str) -> None:
-        """Установка цвета, дизейблинг пункта меню и раздизейблинг пункта предыдущего выбора."""
         self._selected_color_value = self.COLORS[color_name]
-        # Дизейблим выбранный цвет
+        # Disable chosen color
         getattr(self, color_name).setDisabled(True)
-        # И раздизейблим предыдущий
+        # Release the previous one
         getattr(self, self._last_color_name).setDisabled(False)
         self._last_color_name = color_name
         self._show_message(f'{config.COLOR_SET_MSG} {color_name}', 100)
@@ -104,13 +106,12 @@ class TrayCounter(QMainWindow):
         return self._selected_color_value
 
     def set_up(self) -> None:
-        """Вывод информационного окна"""
-        # Объявим и добавим действия для работы с иконкой системного трея
-        self._load_config()
+        self._load_and_set_color_config()
         tray_menu = QMenu()
-        quit_action = QAction("Закрыть", self)
+        quit_action = QAction(config.CLOSE_MSG, self)
         quit_action.triggered.connect(self._close)
-        # Строим меню всех цветов
+
+        # Create menu
         for name in self.COLORS:
             self._set_context_color(tray_menu, name)
 
@@ -120,15 +121,10 @@ class TrayCounter(QMainWindow):
         self._show_message(self.metric.get_startup_message())
 
     def _show_message(self, msg: str, time: int = 2000) -> None:
-        """Вывод сообщения в трее"""
         msg_type = QSystemTrayIcon.Information  # type: ignore
         self.tray_icon.showMessage(self.metric.get_name(), msg, msg_type, time)
 
     def _set_context_color(self, tray_menu: QMenu, name: str) -> None:
-        """
-        Установка цвета в контекстное меню трея
-        и создание атрибута для дисейбла.
-        """
         color_action = QAction(name, self)
         if self.COLORS[name] == self._selected_color_value:
             color_action.setDisabled(True)
@@ -139,7 +135,7 @@ class TrayCounter(QMainWindow):
     def _save_config(self, color: str) -> None:
         self.db.save_config(DBConfigData(color=color))
 
-    def _load_config(self) -> None:
+    def _load_and_set_color_config(self) -> None:
         conf = self.db.load_config()
         if conf.color:
             self._selected_color_value = self.COLORS[conf.color]

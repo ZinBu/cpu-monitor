@@ -8,6 +8,7 @@ MAP_SIZE = 64, 64
 LINUX_PLATFORM = 'linux'
 
 COLOR_SET_MSG = 'Color set: '
+CLOSE_MSG = 'Close'
 
 DB_DIR = '_db'
 DB_NAME = os.path.join(DB_DIR, 'config')
