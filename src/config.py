@@ -1,4 +1,16 @@
+import os
 from enum import Enum
+
+
+REFRESH_TIMEOUT_SEC = 1
+DIGIT_SIZE = 45
+MAP_SIZE = 64, 64
+LINUX_PLATFORM = 'linux'
+
+COLOR_SET_MSG = 'Color set: '
+
+DB_DIR = '_db'
+DB_NAME = os.path.join(DB_DIR, 'config')
 
 
 COLORS = dict(
@@ -32,8 +44,3 @@ class Colors(Enum):
     MediumSlateBlue = (123, 104, 238)
     DeepSkyBlue = (0, 191, 255)
     SteelBlue = (30, 144, 255)
-
-
-DIGIT_SIZE = 45
-MAP_SIZE = 64, 64
-LINUX_PLATFORM = 'linux'

@@ -1,5 +1,3 @@
-import os
-import shelve
 import typing
 from time import sleep
 
@@ -10,25 +8,23 @@ from PyQt5.QtWidgets import QMainWindow, QSystemTrayIcon, QMenu, QAction, qApp, 
 
 from src import config
 from src import tools
-from src.protocols import Metric
+from src.protocols import Metric, Database, DBConfigData
 
 
+# TODO Translate !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 class TrayCounter(QMainWindow):
     TRAY_ICON_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
     TRAY_ICON_COLOR_SLOT = QtCore.pyqtSignal(str)  # Слот для виджета
     TIMEOUT = 2  # Период обновления виджета
     DEFAULT_COLOR = 'Auto'
-    DB_DIR = 'db'
-    DB_NAME = os.path.join(DB_DIR, 'config')
 
     # Настройки значка
-    MAP_SIZE = 64, 64
-    DIGIT_SIZE = 45
     COLORS = config.COLORS
 
-    def __init__(self, metric: type[Metric]):
+    def __init__(self, metric: type[Metric], db: Database):
         # Переопределяем конструктор класса
         # Обязательно нужно вызвать метод супер класса
+        self.db = db
         self.metric = metric()
         QMainWindow.__init__(self)
         self.setWindowTitle(self.metric.get_name())
@@ -42,7 +38,7 @@ class TrayCounter(QMainWindow):
         # Задаем дефолтный цвет
         self._selected_color_value = self.COLORS[self.DEFAULT_COLOR]
         # Задаем дефолтную иконку, если что пойдет не так
-        self.default_icon = self.style().standardIcon(QStyle.SP_DesktopIcon)
+        self.default_icon = self.style().standardIcon(QStyle.SP_DesktopIcon)  # type: ignore
         # Ставим первоначальную иконку
         self.set_icon()
         # Выводим информационное сообщение, задаем цвет
@@ -57,7 +53,7 @@ class TrayCounter(QMainWindow):
         value_getter = self.metric.value_getter()
         while True:
             self.TRAY_ICON_SLOT.emit(value_getter())
-            sleep(self.TIMEOUT)
+            sleep(config.REFRESH_TIMEOUT_SEC)
 
     def set_icon(self, digit: typing.Optional[str] = None) -> None:
         """Установка иконки в трей"""
@@ -75,7 +71,7 @@ class TrayCounter(QMainWindow):
         # И раздизейблим предыдущий
         getattr(self, self._last_color_name).setDisabled(False)
         self._last_color_name = color_name
-        self._show_message(f'Установлен цвет: {color_name}', 100)
+        self._show_message(f'{config.COLOR_SET_MSG} {color_name}', 100)
         self._save_config(color_name)
 
     def draw_digit(self, digit: str) -> QtGui.QPixmap:
@@ -83,13 +79,13 @@ class TrayCounter(QMainWindow):
         # Позиционируем цифру на виджете
         digit_place: tuple = 0 if len(digit) > 1 else 20, 50
         # Создаем холстик для рисования цифры иконку
-        icon = QtGui.QPixmap(*self.MAP_SIZE)
+        icon = QtGui.QPixmap(*config.MAP_SIZE)
         icon.fill(QtGui.QColor("transparent"))
         # Рисуем на холстике текст
         self.painter.begin(icon)
         self.painter.setRenderHint(QtGui.QPainter.HighQualityAntialiasing)
         self.painter.setPen(QtGui.QColor(*self.get_digits_color(digit)))
-        self.painter.setFont(QtGui.QFont('Arial', self.DIGIT_SIZE))
+        self.painter.setFont(QtGui.QFont('Arial', config.DIGIT_SIZE))
         self.painter.drawText(QPointF(*digit_place), digit)
         self.painter.end()
         return icon
@@ -125,7 +121,7 @@ class TrayCounter(QMainWindow):
 
     def _show_message(self, msg: str, time: int = 2000) -> None:
         """Вывод сообщения в трее"""
-        msg_type = QSystemTrayIcon.Information
+        msg_type = QSystemTrayIcon.Information  # type: ignore
         self.tray_icon.showMessage(self.metric.get_name(), msg, msg_type, time)
 
     def _set_context_color(self, tray_menu: QMenu, name: str) -> None:
@@ -141,20 +137,13 @@ class TrayCounter(QMainWindow):
         tray_menu.addAction(color_action)
 
     def _save_config(self, color: str) -> None:
-        db_path = tools.executable_file_path(self.DB_NAME)
-        with shelve.open(db_path) as db:
-            db['color'] = color
+        self.db.save_config(DBConfigData(color=color))
 
     def _load_config(self) -> None:
-        db_path = tools.executable_file_path(self.DB_NAME)
-        # Создадим папку, если ее нет
-        if not os.path.exists(db_path + '.dat'):
-            os.mkdir(os.path.join(os.getcwd(), self.DB_DIR))
-        with shelve.open(db_path) as db:
-            color = db.get('color')
-            if color:
-                self._selected_color_value = self.COLORS[color]
-                self._last_color_name = color
+        conf = self.db.load_config()
+        if conf.color:
+            self._selected_color_value = self.COLORS[conf.color]
+            self._last_color_name = conf.color
 
     def _close(self) -> None:
         self.tray_icon.hide()
