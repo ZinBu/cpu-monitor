@@ -2,14 +2,18 @@ import os
 from enum import Enum
 
 
-REFRESH_TIMEOUT_SEC = 1
+REFRESH_TIMEOUT_SEC = 1.0
 DIGIT_SIZE = 45
+ONE_DIGIT_POS = 0
+TWO_DIGIT_POS = 20
 MAP_SIZE = 64, 64
 LINUX_PLATFORM = 'linux'
 
 FONT = 'Arial'
 ICON_BG = 'transparent'
 
+MSG_DURATION_DEFAULT_MS = 2000
+MSG_DURATION_MS = 100
 COLOR_SET_MSG = 'Color set: '
 CLOSE_MSG = 'Close'
 

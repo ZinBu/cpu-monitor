@@ -64,13 +64,13 @@ class TrayCounter(QMainWindow):
         getattr(self, color_name).setDisabled(True)
         # Release the previous one
         getattr(self, previous_color_name).setDisabled(False)
-        self._show_message(f'{config.COLOR_SET_MSG} {color_name}', 100)
+        self._show_message(f'{config.COLOR_SET_MSG} {color_name}', config.MSG_DURATION_MS)
         self._save_config(color_name)
 
     def draw_digit(self, digit: str) -> QtGui.QPixmap:
         """Creates the icon and draw digits"""
         # Set digits position
-        digit_place: tuple = 0 if len(digit) > 1 else 20, 50
+        digit_place: tuple = config.ONE_DIGIT_POS if len(digit) > 1 else config.TWO_DIGIT_POS, 50
         # Creates canvas
         icon = QtGui.QPixmap(*config.MAP_SIZE)
         icon.fill(QtGui.QColor(config.ICON_BG))
@@ -112,7 +112,7 @@ class TrayCounter(QMainWindow):
         self.tray_icon.show()
         self._show_message(self.metric.get_startup_message())
 
-    def _show_message(self, msg: str, time: int = 2000) -> None:
+    def _show_message(self, msg: str, time: int = config.MSG_DURATION_DEFAULT_MS) -> None:
         msg_type = QSystemTrayIcon.Information  # type: ignore
         self.tray_icon.showMessage(self.metric.get_name(), msg, msg_type, time)
 
