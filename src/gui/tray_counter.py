@@ -1,4 +1,5 @@
 import typing
+from functools import cached_property
 from time import sleep
 
 from PyQt5 import QtCore, QtGui
@@ -10,6 +11,8 @@ from src import config
 from src import tools
 from src.protocols import Metric, Database, DBConfigData
 
+COLOR_TYPING = tuple[int, int, int]
+
 
 class TrayCounter(QMainWindow):
     # Widget's slots
@@ -18,6 +21,14 @@ class TrayCounter(QMainWindow):
 
     COLORS = config.Colors
     DEFAULT_COLOR = config.Colors.Auto
+
+    _COLORS_HEAT_MAP = {
+        35: config.Colors.PapayaWhip.value,
+        45: config.Colors.PaleGreen.value,
+        60: config.Colors.SteelBlue.value,
+        75: config.Colors.DarkOrange.value,
+        float('Inf'): config.Colors.Red.value
+    }
 
     def __init__(self, metric: type[Metric], db: Database):
         # It's necessary
@@ -45,6 +56,10 @@ class TrayCounter(QMainWindow):
         while True:
             self.TRAY_ICON_SLOT.emit(value_getter())
             sleep(config.REFRESH_TIMEOUT_SEC)
+
+    @cached_property
+    def color_heat_map(self) -> list[tuple[int, COLOR_TYPING]]:
+        return sorted(self._COLORS_HEAT_MAP.items(), key=lambda x: x[0])
 
     def _couple_slots_and_signals(self) -> None:
         self.TRAY_ICON_SLOT.connect(self.set_icon_in_tray)
@@ -83,17 +98,10 @@ class TrayCounter(QMainWindow):
         self.painter.end()
         return icon
 
-    def get_digits_color(self, digit: str) -> tuple[int, int, int]:
+    def get_digits_color(self, digit: str) -> COLOR_TYPING:
         if not self._selected_color.value:
             digit = int(digit)
-            if digit < 40:
-                return self.COLORS.PaleGreen.value
-            elif digit < 55:
-                return self.COLORS.SteelBlue.value
-            elif digit < 75:
-                return self.COLORS.DarkOrange.value
-            else:
-                return self.COLORS.Red.value
+            return next(color for limit, color in self.color_heat_map if digit < limit)
         return self._selected_color.value
 
     def set_up(self) -> None:
