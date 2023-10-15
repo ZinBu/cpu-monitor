@@ -25,3 +25,7 @@ It is possible to change colors =)
 Running the script (can be added to the startup):
     
     sh cpu_monitor.sh
+
+### Examples
+
+![Image1](https://github.com/ZinBu/cpu-monitor/blob/master/examples/img.png)

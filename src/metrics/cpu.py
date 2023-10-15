@@ -14,7 +14,7 @@ class CpuMetric(Metric):
         return 'CPU Monitor'
     
     def get_startup_message(self) -> str:
-        return f"Отслеживаем {'температуру' if self.linux_platform else 'нагрузку'}"
+        return f"Start monitoring {'temperature' if self.linux_platform else 'load'}"
     
     def value_getter(self) -> typing.Callable[[], str]:
         return (
