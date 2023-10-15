@@ -1,27 +1,27 @@
 # cpu-monitor
 
-Маленькая утилитка для просмотра нагрузки/температуры ЦП через значок трея. 
-Есть возможность менять цвета =)
+A small utility for viewing CPU load/temperature through the tray icon.
+It is possible to change colors =)
 
 
-### Python 3.9
+### Python 3.11
 
-### Запуск через `pip`
+### Launch via `pip' (unstable)
 
     pip install -r requirements.txt
     python main.py
 
-### Запуск через `poetry`
+### Launch via `poetry`
 
     poetry shell  # (optional)
     poetry install
     poetry run python main.py
 
 
-### Создания скрипта для запуска
+### Creating a script to run
 
     make runner
 
-Запуск скрипта (можно добавить в автозагрузку):
+Running the script (can be added to the startup):
     
     sh cpu_monitor.sh
