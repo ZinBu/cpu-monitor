@@ -1,29 +1,35 @@
 import dataclasses
-import typing
-from typing import Protocol
+from abc import ABC, abstractmethod
 
 
 @dataclasses.dataclass
 class DBConfigData:
     color: str
 
+class Metric(ABC):
+    def __init__(self, refresh_time_out_sec: int) -> None:
+        self._refresh_time_out_sec = refresh_time_out_sec
 
-class Metric(Protocol):
+    @property
+    def refresh_time_out_sec(self) -> float:
+        return float(self._refresh_time_out_sec)
 
+    @abstractmethod
     def get_name(self) -> str:
         ...
 
+    @abstractmethod
     def get_startup_message(self) -> str:
         ...
-    
-    def value_getter(self) -> typing.Callable[[], str]:
+
+    @abstractmethod
+    def get_value(self) -> str:
         ...
     
-
-class Database(Protocol):
-
+class Database(ABC):
+    @abstractmethod
     def load_config(self) -> DBConfigData:
         ...
-
+    @abstractmethod
     def save_config(self, conf: DBConfigData) -> None:
         ...
