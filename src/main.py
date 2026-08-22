@@ -1,6 +1,6 @@
 import sys
 
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication
 
 from src.gui.database import ConfigDB
 from src.gui.tray_counter import TrayCounter

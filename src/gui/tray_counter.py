@@ -2,10 +2,11 @@ import typing
 from functools import cached_property
 from time import sleep
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QPointF
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMainWindow, QSystemTrayIcon, QMenu, QAction, qApp, QStyle
+from PyQt6 import QtCore, QtGui
+from PyQt6.QtCore import QPointF
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QMainWindow, QSystemTrayIcon, QMenu, QApplication, QStyle
+from PyQt6.QtGui import QAction
 
 from src import config
 from src import tools
@@ -46,7 +47,7 @@ class TrayCounter(QMainWindow):
 
         self._selected_color = self.DEFAULT_COLOR
         # Set a default icon for an unpredictable situation
-        self.default_icon = self.style().standardIcon(QStyle.SP_DesktopIcon)  # type: ignore
+        self.default_icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DesktopIcon)
         self.set_up()
         self.run_monitoring()
 
@@ -91,7 +92,7 @@ class TrayCounter(QMainWindow):
         icon.fill(QtGui.QColor(config.ICON_BG))
         # Drawing
         self.painter.begin(icon)
-        self.painter.setRenderHint(QtGui.QPainter.HighQualityAntialiasing)
+        self.painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         self.painter.setPen(QtGui.QColor(*self.get_digits_color(digit)))
         self.painter.setFont(QtGui.QFont(config.FONT, config.DIGIT_SIZE))
         self.painter.drawText(QPointF(*digit_place), digit)
@@ -121,7 +122,7 @@ class TrayCounter(QMainWindow):
         self._show_message(self.metric.get_startup_message())
 
     def _show_message(self, msg: str, time: int = config.MSG_DURATION_DEFAULT_MS) -> None:
-        msg_type = QSystemTrayIcon.Information  # type: ignore
+        msg_type = QSystemTrayIcon.MessageIcon.Information
         self.tray_icon.showMessage(self.metric.get_name(), msg, msg_type, time)
 
     def _set_context_color(self, tray_menu: QMenu, color: config.Colors) -> None:
@@ -142,4 +143,4 @@ class TrayCounter(QMainWindow):
 
     def _close(self) -> None:
         self.tray_icon.hide()
-        qApp.quit()
+        QApplication.quit()
