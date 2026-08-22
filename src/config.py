@@ -2,7 +2,6 @@ import os
 from enum import Enum
 
 
-REFRESH_TIMEOUT_SEC = 1.0
 DIGIT_SIZE = 45
 ONE_DIGIT_POS = 0
 TWO_DIGIT_POS = 20
@@ -18,6 +17,7 @@ COLOR_SET_MSG = 'Color set: '
 CLOSE_MSG = 'Close'
 
 DB_DIR = '_db'
+DB_EXT = '.dat'
 DB_NAME = os.path.join(DB_DIR, 'config')
 
 

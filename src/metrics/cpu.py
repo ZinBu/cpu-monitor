@@ -16,11 +16,11 @@ class CpuMetric(Metric):
     def get_startup_message(self) -> str:
         return f"Start monitoring {'temperature' if self.linux_platform else 'load'}"
     
-    def value_getter(self) -> typing.Callable[[], str]:
+    def get_value(self) -> str:
         return (
-            lambda: str(int(psutil.sensors_temperatures()['coretemp'][0].current))
+            str(int(psutil.sensors_temperatures()['coretemp'][0].current))
             if self.linux_platform
-            else lambda: str(int(psutil.cpu_percent()))
+            else str(int(psutil.cpu_percent()))
         )
     
     @cached_property

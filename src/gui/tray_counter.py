@@ -30,12 +30,12 @@ class TrayCounter(QMainWindow):
         float('Inf'): config.Colors.Red.value
     }
 
-    def __init__(self, metric: type[Metric], db: Database):
+    def __init__(self, metric: Metric, db: Database):
         # It's necessary
         QMainWindow.__init__(self)
 
         self.db = db
-        self.metric = metric()
+        self.metric = metric
 
         self.setWindowTitle(self.metric.get_name())
 
@@ -52,10 +52,10 @@ class TrayCounter(QMainWindow):
 
     @tools.thread
     def run_monitoring(self) -> None:
-        value_getter = self.metric.value_getter()
         while True:
-            self.TRAY_ICON_SLOT.emit(value_getter())
-            sleep(config.REFRESH_TIMEOUT_SEC)
+            value = self.metric.get_value()
+            self.TRAY_ICON_SLOT.emit(value)
+            sleep(self.metric.refresh_time_out_sec)
 
     @cached_property
     def color_heat_map(self) -> list[tuple[int, COLOR_TYPING]]:
