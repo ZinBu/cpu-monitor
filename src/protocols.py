@@ -23,7 +23,7 @@ class Metric(ABC):
         ...
 
     @abstractmethod
-    def get_value(self) -> str:
+    def get_value(self) -> int:
         ...
     
 class Database(ABC):

@@ -2,7 +2,7 @@ import os
 from enum import Enum
 
 
-DIGIT_SIZE = 45
+DIGIT_SIZE = 42
 ONE_DIGIT_POS = 0
 TWO_DIGIT_POS = 20
 MAP_SIZE = 64, 64

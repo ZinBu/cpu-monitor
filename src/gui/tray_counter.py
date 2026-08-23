@@ -66,7 +66,7 @@ class TrayCounter(QMainWindow):
         self.TRAY_ICON_SLOT.connect(self.set_icon_in_tray)
         self.TRAY_ICON_COLOR_SLOT.connect(self.set_color)
 
-    def set_icon_in_tray(self, digit: typing.Optional[str] = None) -> None:
+    def set_icon_in_tray(self, digit: typing.Optional[int] = None) -> None:
         if not digit:
             self.tray_icon.setIcon(self.default_icon)
         else:
@@ -83,23 +83,49 @@ class TrayCounter(QMainWindow):
         self._show_message(f'{config.COLOR_SET_MSG} {color_name}', config.MSG_DURATION_MS)
         self._save_config(color_name)
 
-    def draw_digit(self, digit: str) -> QtGui.QPixmap:
+    def draw_digit(self, digit: int) -> QtGui.QPixmap:
         """Creates the icon and draw digits"""
-        # Set digits position
-        digit_place: tuple = config.ONE_DIGIT_POS if len(digit) > 1 else config.TWO_DIGIT_POS, 50
-        # Creates canvas
         icon = QtGui.QPixmap(*config.MAP_SIZE)
         icon.fill(QtGui.QColor(config.ICON_BG))
-        # Drawing
+
         self.painter.begin(icon)
         self.painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        self.painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing)
+        
         self.painter.setPen(QtGui.QColor(*self.get_digits_color(digit)))
-        self.painter.setFont(QtGui.QFont(config.FONT, config.DIGIT_SIZE))
-        self.painter.drawText(QPointF(*digit_place), digit)
+
+        # 1. Calculate the target area with 4px margins on each side
+        margin = 4
+        target_width = icon.width() - (margin * 2)
+        target_height = icon.height() - (margin * 2)
+
+        # 2. Select the font starting with the maximum size
+        font_size = config.DIGIT_SIZE
+        font = QtGui.QFont(config.FONT, font_size)
+        font.setBold(True)
+
+        # Reduce the font size until the text fits within the width and height
+        while font_size > 8:
+            metrics = QtGui.QFontMetrics(font)
+            if metrics.horizontalAdvance(digit) <= target_width and metrics.height() <= target_height:
+                break
+            font_size -= 1
+            font.setPointSize(font_size)
+
+        self.painter.setFont(font)
+
+        # 3. Draw the text centered in the icon
+        rect = QtCore.QRectF(0, 0, icon.width(), icon.height())
+        self.painter.drawText(
+            rect, 
+            QtCore.Qt.AlignmentFlag.AlignCenter, 
+            digit
+        )
+        
         self.painter.end()
         return icon
 
-    def get_digits_color(self, digit: str) -> COLOR_TYPING:
+    def get_digits_color(self, digit: int) -> COLOR_TYPING:
         if not self._selected_color.value:
             digit = int(digit)
             return next(color for limit, color in self.color_heat_map if digit < limit)

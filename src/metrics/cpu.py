@@ -1,4 +1,3 @@
-import typing
 import sys
 from functools import cached_property
 
@@ -16,7 +15,7 @@ class CpuMetric(Metric):
     def get_startup_message(self) -> str:
         return f"Start monitoring {'temperature' if self.linux_platform else 'load'}"
     
-    def get_value(self) -> str:
+    def get_value(self) -> int:
         return (
             str(int(psutil.sensors_temperatures()['coretemp'][0].current))
             if self.linux_platform
